@@ -1,4 +1,3 @@
-// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
@@ -9,6 +8,172 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+// schema.prisma
+
+// Define the Student model
+model Student {
+  student_id        Int                 @id @default(autoincrement())
+  name              String
+  date_of_birth     DateTime
+  address           String
+  email             String
+  phone_number      String
+  class             Class               @relation(fields: [class_id], references: [class_id])
+  class_id          Int
+  Attendance        Attendance[]
+  Mark              Mark[]
+  Fee               Fee[]
+  Transportation    Transportation[]
+  MonthlyTest       MonthlyTest[]
+  QuarterlyExam     QuarterlyExam[]
+  StudentAttendance StudentAttendance[]
+}
+
+// Define the Teacher model
+model Teacher {
+  teacher_id        Int                 @id @default(autoincrement())
+  name              String
+  date_of_birth     DateTime
+  address           String
+  email             String
+  phone_number      String
+  Class             Class[]
+  Assignment        Assignment[]
+  TeacherAttendance TeacherAttendance[]
+}
+
+// Define the Class model
+model Class {
+  class_id          Int                 @id @default(autoincrement())
+  class_name        String
+  class_teacher     Teacher             @relation(fields: [class_teacher_id], references: [teacher_id])
+  class_teacher_id  Int
+  Student           Student[]
+  Attendance        Attendance[]
+  Assignment        Assignment[]
+  Exam              Exam[]
+  StudentAttendance StudentAttendance[]
+}
+
+// Define the Subject model
+
+// Define the Attendance model
+model Attendance {
+  attendance_id Int      @id @default(autoincrement())
+  student       Student  @relation(fields: [student_id], references: [student_id])
+  student_id    Int
+  class         Class    @relation(fields: [class_id], references: [class_id])
+  class_id      Int
+  date          DateTime
+  is_present    Boolean
+}
+
+// Define the Assignment model
+model Assignment {
+  assignment_id Int      @id @default(autoincrement())
+  class         Class    @relation(fields: [class_id], references: [class_id])
+  class_id      Int
+  subject       Subject  @relation(fields: [subject_id], references: [subject_id])
+  subject_id    Int
+  teacher       Teacher  @relation(fields: [teacher_id], references: [teacher_id])
+  teacher_id    Int
+  deadline      DateTime
+}
+
+// Define the Grade model
+model Mark {
+  mark_id    Int     @id @default(autoincrement())
+  student    Student @relation(fields: [student_id], references: [student_id])
+  student_id Int
+  subject    Subject @relation(fields: [subject_id], references: [subject_id])
+  subject_id Int
+  marks      Float
+}
+
+// Define the Exam model
+model Exam {
+  exam_id    Int      @id @default(autoincrement())
+  class      Class    @relation(fields: [class_id], references: [class_id])
+  class_id   Int
+  subject    Subject  @relation(fields: [subject_id], references: [subject_id])
+  subject_id Int
+  date       DateTime
+}
+
+// Define the Fee model
+model Fee {
+  fee_id       Int      @id @default(autoincrement())
+  student      Student  @relation(fields: [student_id], references: [student_id])
+  student_id   Int
+  amount       Float
+  payment_date DateTime
+}
+
+// Define the Transportation model
+model Transportation {
+  transportation_id Int     @id @default(autoincrement())
+  student           Student @relation(fields: [student_id], references: [student_id])
+  student_id        Int
+  vehicle_number    String
+  pickup_location   String
+  dropoff_location  String
+}
+
+// Define the TeacherAttendance model
+model TeacherAttendance {
+  attendance_id Int      @id @default(autoincrement())
+  teacher       Teacher  @relation(fields: [teacher_id], references: [teacher_id])
+  teacher_id    Int
+  date          DateTime
+  is_present    Boolean
+}
+
+// schema.prisma
+
+// Define the MonthlyTest model
+model MonthlyTest {
+  test_id    Int      @id @default(autoincrement())
+  student    Student  @relation(fields: [student_id], references: [student_id])
+  student_id Int
+  subject    Subject  @relation(fields: [subject_id], references: [subject_id])
+  subject_id Int
+  marks      Float
+  test_date  DateTime
+}
+
+// Define the QuarterlyExam model
+model QuarterlyExam {
+  exam_id    Int      @id @default(autoincrement())
+  student    Student  @relation(fields: [student_id], references: [student_id])
+  student_id Int
+  subject    Subject  @relation(fields: [subject_id], references: [subject_id])
+  subject_id Int
+  marks      Float
+  exam_date  DateTime
+}
+
+// Add monthly tests and quarterly exams to the Subject model
+model Subject {
+  subject_id    Int             @id @default(autoincrement())
+  subject_name  String
+  Assignment    Assignment[]
+  Mark          Mark[]
+  Exam          Exam[]
+  MonthlyTest   MonthlyTest[]
+  QuarterlyExam QuarterlyExam[]
+}
+
+// Define the StudentAttendance model
+model StudentAttendance {
+  attendance_id Int      @id @default(autoincrement())
+  student       Student  @relation(fields: [student_id], references: [student_id])
+  student_id    Int
+  class         Class    @relation(fields: [class_id], references: [class_id])
+  class_id      Int
+  date          DateTime
+  is_present    Boolean
 }
