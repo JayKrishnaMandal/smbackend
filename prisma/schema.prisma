@@ -1,29 +1,90 @@
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql" // or "mysql", "sqlite", etc.
   url      = env("DATABASE_URL")
 }
 
-// schema.prisma
+// Define the School model
+model School {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  phone     String
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users  User[]
+  grades Grade[]
+}
+
+// Define the User model
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  schoolId  Int
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student? @relation
+  teacher Teacher? @relation
+
+  studentId Int?
+  teacherId Int?
+}
+
+// Define the Role enum
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+// Define the Grade model
+model Grade {
+  grade_id          Int                 @id @default(autoincrement())
+  grade_name        String
+  grade_teacher     Teacher             @relation(fields: [grade_teacher_id], references: [teacher_id])
+  grade_teacher_id  Int
+  schoolId          Int
+  school            School              @relation(fields: [schoolId], references: [id])
+  sections          Section[]
+  Attendance        Attendance[]
+  Assignment        Assignment[]
+  Exam              Exam[]
+  StudentAttendance StudentAttendance[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+// Define the Section model
+model Section {
+  section_id        Int                 @id @default(autoincrement())
+  section_name      String
+  gradeId           Int
+  grade             Grade               @relation(fields: [gradeId], references: [grade_id])
+  students          Student[]
+  Attendance        Attendance[]
+  StudentAttendance StudentAttendance[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
 
 // Define the Student model
 model Student {
   student_id        Int                 @id @default(autoincrement())
-  name              String
-  date_of_birth     DateTime
-  address           String
-  email             String
-  phone_number      String
-  class             Class               @relation(fields: [class_id], references: [class_id])
-  class_id          Int
+  user              User                @relation(fields: [userId], references: [id])
+  userId            Int                 @unique
+  sectionId         Int
+  section           Section             @relation(fields: [sectionId], references: [section_id])
   Attendance        Attendance[]
   Mark              Mark[]
   Fee               Fee[]
@@ -31,52 +92,40 @@ model Student {
   MonthlyTest       MonthlyTest[]
   QuarterlyExam     QuarterlyExam[]
   StudentAttendance StudentAttendance[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 }
 
 // Define the Teacher model
 model Teacher {
   teacher_id        Int                 @id @default(autoincrement())
-  name              String
-  date_of_birth     DateTime
-  address           String
-  email             String
-  phone_number      String
-  Class             Class[]
+  user              User                @relation(fields: [userId], references: [id])
+  userId            Int                 @unique
+  grades            Grade[]
   Assignment        Assignment[]
   TeacherAttendance TeacherAttendance[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 }
-
-// Define the Class model
-model Class {
-  class_id          Int                 @id @default(autoincrement())
-  class_name        String
-  class_teacher     Teacher             @relation(fields: [class_teacher_id], references: [teacher_id])
-  class_teacher_id  Int
-  Student           Student[]
-  Attendance        Attendance[]
-  Assignment        Assignment[]
-  Exam              Exam[]
-  StudentAttendance StudentAttendance[]
-}
-
-// Define the Subject model
 
 // Define the Attendance model
 model Attendance {
   attendance_id Int      @id @default(autoincrement())
   student       Student  @relation(fields: [student_id], references: [student_id])
   student_id    Int
-  class         Class    @relation(fields: [class_id], references: [class_id])
-  class_id      Int
+  section       Section  @relation(fields: [sectionId], references: [section_id])
+  sectionId     Int
   date          DateTime
   is_present    Boolean
+  grade         Grade?   @relation(fields: [gradeGrade_id], references: [grade_id])
+  gradeGrade_id Int?
 }
 
 // Define the Assignment model
 model Assignment {
   assignment_id Int      @id @default(autoincrement())
-  class         Class    @relation(fields: [class_id], references: [class_id])
-  class_id      Int
+  grade         Grade    @relation(fields: [grade_id], references: [grade_id])
+  grade_id      Int
   subject       Subject  @relation(fields: [subject_id], references: [subject_id])
   subject_id    Int
   teacher       Teacher  @relation(fields: [teacher_id], references: [teacher_id])
@@ -84,7 +133,7 @@ model Assignment {
   deadline      DateTime
 }
 
-// Define the Grade model
+// Define the Mark model
 model Mark {
   mark_id    Int     @id @default(autoincrement())
   student    Student @relation(fields: [student_id], references: [student_id])
@@ -97,8 +146,8 @@ model Mark {
 // Define the Exam model
 model Exam {
   exam_id    Int      @id @default(autoincrement())
-  class      Class    @relation(fields: [class_id], references: [class_id])
-  class_id   Int
+  grade      Grade    @relation(fields: [grade_id], references: [grade_id])
+  grade_id   Int
   subject    Subject  @relation(fields: [subject_id], references: [subject_id])
   subject_id Int
   date       DateTime
@@ -125,14 +174,14 @@ model Transportation {
 
 // Define the TeacherAttendance model
 model TeacherAttendance {
-  attendance_id Int      @id @default(autoincrement())
-  teacher       Teacher  @relation(fields: [teacher_id], references: [teacher_id])
-  teacher_id    Int
-  date          DateTime
-  is_present    Boolean
+  attendance_id  Int       @id @default(autoincrement())
+  teacher        Teacher   @relation(fields: [teacher_id], references: [teacher_id])
+  teacher_id     Int
+  date           DateTime
+  is_present     Boolean
+  arrival_time   DateTime?
+  departure_time DateTime?
 }
-
-// schema.prisma
 
 // Define the MonthlyTest model
 model MonthlyTest {
@@ -156,7 +205,7 @@ model QuarterlyExam {
   exam_date  DateTime
 }
 
-// Add monthly tests and quarterly exams to the Subject model
+// Define the Subject model
 model Subject {
   subject_id    Int             @id @default(autoincrement())
   subject_name  String
@@ -172,8 +221,10 @@ model StudentAttendance {
   attendance_id Int      @id @default(autoincrement())
   student       Student  @relation(fields: [student_id], references: [student_id])
   student_id    Int
-  class         Class    @relation(fields: [class_id], references: [class_id])
-  class_id      Int
+  section       Section  @relation(fields: [sectionId], references: [section_id])
+  sectionId     Int
   date          DateTime
   is_present    Boolean
+  grade         Grade?   @relation(fields: [gradeGrade_id], references: [grade_id])
+  gradeGrade_id Int?
 }
